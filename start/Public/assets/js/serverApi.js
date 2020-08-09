@@ -1,4 +1,4 @@
-const SERVER_URL = "127.0.0.1:5001/note/";
+const SERVER_URL = "https://cranegallery.ir/api/note/";
 
 
 function getAllNotes() {

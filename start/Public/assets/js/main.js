@@ -148,24 +148,12 @@ var app = (function () {
         };
 
 
-        if ('serviceWorker' in navigator && 'SyncManager' in window) {
-          navigator.serviceWorker.ready.then(function (sw) {
-            db.writeNote(noteData).then(function () {
-              helpers.showMessage('successfully updated to local db!');
-              setTimeout(function () {
-                window.location.href = '/index.html';
-              }, 500);
-              return sw.sync.register(BACKGROUND_SYNC_SAVETOSERVER);
-            });
-          });
-        } else {
-          sendData(noteData).then(function () {
-            helpers.showMessage('successfully updated to local db!');
-            setTimeout(function () {
-              window.location.href = '/index.html';
-            }, 500)
-          });
-        }
+        sendData(noteData).then(function () {
+          helpers.showMessage('successfully updated to local db!');
+          setTimeout(function () {
+            window.location.href = '/index.html';
+          }, 500)
+        });
 
       });
     };

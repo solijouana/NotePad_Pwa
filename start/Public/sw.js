@@ -13,6 +13,7 @@ var STATIC_ASSETS = [
     '/assets/js/libs/fetch.js',
     '/assets/js/libs/idb.min.js',
     '/assets/js/db.js',
+    '/assets/js/serverApi.js',
     '/assets/js/libs/promise.js',
     '/assets/js/helpers.js',
     '/assets/js/main.js',
