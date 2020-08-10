@@ -1,5 +1,5 @@
-const SERVER_URL = "https://cranegallery.ir/api/note/";
-
+const SERVER_URL = 'https://cranegallery.ir/api/note/';
+const BACKGROUND_SYNC_SERVER = 'new-notes-sync';
 
 function getAllNotes() {
     return fetch(SERVER_URL);
@@ -14,7 +14,10 @@ function sendData(noteData) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Accept': 'application/json'
+            'Accept': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+            'Access-Control-Allow-Headers': 'x-requested-with, Content-Type, origin, authorization, accept, client-security-token'
         },
         body: JSON.stringify(noteData)
     });

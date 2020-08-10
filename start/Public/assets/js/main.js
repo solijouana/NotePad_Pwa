@@ -37,7 +37,7 @@ var app = (function () {
       var HTML = NOTE_TEMPLATE.replace(getRegex(TITLE_PLACEHOLDER), title);
       HTML = HTML.replace(getRegex(ID_PLACEHOLDER), id);
       HTML = HTML.replace(getRegex(NOTE_PLACEHOLDER), note);
-      HTML = HTML.replace(getRegex(DATE_PLACEHOLDER), helpers.formatDate(date));
+      //HTML = HTML.replace(getRegex(DATE_PLACEHOLDER), helpers.formatDate(date));
       HTML = HTML.replace(getRegex(SYNCED_PLACEHOLDER), synced);
       HTML = HTML.replace(getRegex(NOTE_PLACEHOLDER), note);
 
@@ -90,15 +90,41 @@ var app = (function () {
       dialog.showModal();
     };
 
-    var getDataAndUpdateUI = function () {
-      // Call essential methods
-      db.readAllNote().then(function (data) {
-        var sortedData = data.sort(function (a, b) {
-          return b.id - a.id;
-        });
-        updateUI(sortedData);
+    var sortedByDate = function (data) {
+      var getTime = function (d) {
+        return new Date(d).getTime();
+      };
+      return data.sort(function (a, b) {
+        return getTime(b.date) - getTime(a.date);
       });
+    }
+
+    var sortAndUpdate = function (data) {
+      var sortedData = sortedByDate(data);
+      updateUI(sortedData);
+    }
+
+    var getDataAndUpdateUI = function () {
+      var dataArray = [];
+      getAllNotes().then(function (res) {
+        return res.json();
+      })
+        .then(function (data) {
+          for (var key in data) {
+            data[key].id = key;
+            dataArray.push(data[key]);
+          }
+          sortAndUpdate(data);
+        })
+        .catch(function () {
+          console.log('fetch data from server failed...!');
+          db.readAllNote()
+            .then(function (data) {
+              sortAndUpdate(data);
+            });
+        });
     };
+
 
     var deleteNote = function (id) {
       db.deleteNote(id).then(function () {
@@ -147,16 +173,30 @@ var app = (function () {
           synced: false,
         };
 
-
-        sendData(noteData).then(function () {
-          helpers.showMessage('successfully updated to local db!');
-          setTimeout(function () {
-            window.location.href = '/index.html';
-          }, 500)
-        });
-
+        if ('serviceWorker' in navigator && 'SyncManager' in window) {
+          navigator.serviceWorker.ready
+            .then(function (sw) {
+              db.writeNote(noteData)
+                .then(function () {
+                  helpers.showMessage('successfully updated to local db!');
+                  setTimeout(function () {
+                    window.location.href = '/index.html';
+                  }, 500);
+                  return sw.sync.register(BACKGROUND_SYNC_SERVER);
+                });
+            });
+        }
+        else {
+          sendData(noteData).then(function () {
+            helpers.showMessage('successfully updated to Server!');
+            setTimeout(() => {
+              window.location.href = '/index.html';
+            }, 500);
+          });
+        }
       });
     };
+
     // This means we are in edit mode
     if (id) {
       pageTitle.innerHTML = 'Edit your Note';

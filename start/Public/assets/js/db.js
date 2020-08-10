@@ -28,9 +28,7 @@ var db = function () {
         return dbPromise.then(function (db) {
             var tx = db.transaction(TABLE_NAME, 'readwrite');
             var store = tx.objectStore(TABLE_NAME);
-
             store.put(data);
-
             return tx.complete;
         });
     };

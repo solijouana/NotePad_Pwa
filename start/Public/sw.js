@@ -1,5 +1,9 @@
-const STATIC_CACHE_NAME = 'pwanote-static';
-const DYNAMIC_CACHE_NAME = 'pwanote-dynamic';
+importScripts('/assets/js/libs/idb.min.js');
+importScripts('/assets/js/db.js');
+importScripts('/assets/js/serverApi.js');
+
+const STATIC_CACHE_NAME = 'pwanote-static_V2';
+const DYNAMIC_CACHE_NAME = 'pwanote-dynamic_V2';
 const GOOGLE_FONT_URL = 'https://fonts.gstatic.com';
 
 var STATIC_ASSETS = [
@@ -49,7 +53,6 @@ self.addEventListener('activate', function (event) {
             );
         })
     );
-
     return self.clients.claim();
 });
 
@@ -90,6 +93,41 @@ self.addEventListener('fetch', function (event) {
             caches.match(request)
                 .then((res) => {
                     return res || cacheFonts(request);
+                })
+        );
+    }
+    if (request.url.indexOf(SERVER_URL) > -1) {
+        event.respondWith(
+            fetch(request)
+                .then(function (res) {
+                    var resClone = res.clone();
+                    db.clearAll()
+                        .then(function () {
+                            return resClone.json();
+                        })
+                        .then(function (data) {
+                            for (var key in data) {
+                                data[key].id = key;
+                                db.writeNote(data[key]);
+                            }
+                        });
+                    return res;
+                })
+        );
+    }
+});
+
+
+self.addEventListener('sync', function (event) {
+    console.log('[sw] sync fetch...', event);
+    if (event.tag === BACKGROUND_SYNC_SERVER) {
+        event.waitUntil(
+            db.readAllNote()
+                .then(function (data) {
+                    data.filter(note => !note.synced)
+                        .map(note => {
+                            sendData(note);
+                        });
                 })
         );
     }
