@@ -132,3 +132,14 @@ self.addEventListener('sync', function (event) {
         );
     }
 });
+
+self.addEventListener('push', function (event) {
+    console.log('[sw] push runing ', event);
+    var payLoad = event.data ? event.data.text() : 'no data - no data';
+    var options = {
+        body: payLoad.split('-')[1],
+        icon: '/assets/images/icons/icon-96x96.png',
+        badge: '/assets/images/icons/icon-96x96.png'
+    };
+    self.registration.showNotification(payLoad.split('-')[0], options);
+});

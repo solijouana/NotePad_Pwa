@@ -218,6 +218,20 @@ var app = (function () {
   };
 })();
 
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding)
+    .replace(/-/g, '+')
+    .replace(/_/g, '/');
+
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
@@ -229,4 +243,88 @@ if ('serviceWorker' in navigator) {
       console.log(err);
     })
   });
+}
+
+function storePushSub() {
+  var registerReq;
+  navigator.serviceWorker.ready
+    .then(function (req) {
+      registerReq = req;
+      return req.pushManager.getSubscription();
+    })
+    .then(function (pushSubscription) {
+      console.log('Push Subscription', pushSubscription);
+      if (pushSubscription) {
+        console.log('we already subscriped');
+        return;
+      }
+      var privateKey = 'RFRN6bCo-jFm4pZTglAo4KaQrtt3HrWKwt-sux5JJmI';
+      const VapidPublicKey = 'BCdYp7eEnT4D0g0fCmdeYWOAYWO2z041gv9GcFJeacfVF4DooRpEoUSgf5PzISGgQkLKH3kmQ3gHMCA8zISBb1o';
+      const convertedVapidKey = urlBase64ToUint8Array(VapidPublicKey);
+
+      return registerReq.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: convertedVapidKey
+      })
+        .then(function (newPushSubscription) {
+          console.log('New Push', newPushSubscription);
+          var sub = {
+            endoint: newPushSubscription.endoint,
+            p256dh: newPushSubscription.toJSON().keys.p256dh,
+            auth: newPushSubscription.toJSON().keys.auth
+          };
+          return postSubscription(sub);
+        });
+    });
+}
+
+function VerifyNotificationButton() {
+  notificationBtn.innerText = 'Subscribed';
+  notificationBtn.disabled = true;
+}
+
+function showSuccessMessage(message) {
+  var options = {
+    body: 'You have successfully subscribed to our Notification service!',
+    icon: '/assets/images/icons/icon-96x96.png',
+    image: '/assets/images/icons/icon-96x96.png',
+    badge: '/assets/images/icons/icon-96x96.png',
+    dir: 'ltr', // 'auto' | 'ltr' | 'rtl'
+    vibrate: [100, 50, 200],
+  };
+  navigator.serviceWorker.ready
+    .then(function (registration) {
+      registration.showNotification(message, options);
+    });
+  //new Notification('Subscription granted!', options);
+
+
+}
+
+function requestPermission() {
+  Notification.requestPermission(function (choise) {
+    console.log(choise);
+    if (choise === 'denied') {
+      console.log('user Denied Notification', choise);
+    } else {
+      console.log('user Accepted Notification', choise);
+      storePushSub();
+      showSuccessMessage('Subscription granted!');
+    }
+  });
+}
+
+var notificationBtn = document.querySelector('.notification-button');
+
+if ('Notification' in window && 'serviceWorker' in navigator) {
+
+  if (Notification.permission === 'granted') {
+    VerifyNotificationButton();
+  }
+  else {
+    notificationBtn.addEventListener('click', requestPermission)
+  }
+}
+else {
+  notificationBtn.style.display = 'none';
 }
